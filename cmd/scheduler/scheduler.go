@@ -96,6 +96,7 @@ func (bST byStartTime) Less(i, j int) bool {
 	return bST[i].unixAppointmentStartDate < bST[j].unixAppointmentStartDate
 }
 
+// Binary search to find if the time is overlap.
 func isStartTimeOverlap(appointments []Appointment, startTime int64) bool {
 	fmt.Println(appointments, startTime)
 	l := 0
