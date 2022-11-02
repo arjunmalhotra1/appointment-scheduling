@@ -129,18 +129,28 @@ func (s Scheduler) GetAppointmentsByTrainer(trainerId string) ([]Appointment, er
 
 func (s Scheduler) GetAppointments(trainerId, stringStartDate, stringEndDate string) ([]Appointment, error) {
 	var availableAppointments []Appointment
-	startDate, _ := time.Parse(timeLayout, stringStartDate)
-	endDate, _ := time.Parse(timeLayout, stringEndDate)
+	startDate, err := time.Parse(timeLayout, stringStartDate)
+	if err != nil {
+		log.Println("GetAppointments: error parsing the start date", err)
+		return []Appointment{}, fmt.Errorf("internal server error")
+	}
+	endDate, err := time.Parse(timeLayout, stringEndDate)
+	if err != nil {
+		log.Println("GetAppointments: error parsing the end date", err)
+		return []Appointment{}, fmt.Errorf("internal server error")
+	}
 	if endDate.Before(startDate) {
 		return []Appointment{}, fmt.Errorf("start date needs to be before the end date")
 	}
-	intTrainerId, _ := strconv.Atoi(trainerId)
+	intTrainerId, err := strconv.Atoi(trainerId)
+	if err != nil {
+		log.Println("GetAppointments: error converting string to int", err)
+		return []Appointment{}, fmt.Errorf("internal server error")
+	}
 	effectiveStartDate := calculateEffectiveStartDate(startDate)
 	effectiveEndDate := calculateEffectiveEndDate(endDate)
 	fmt.Println("e:", effectiveEndDate)
 	for effectiveStartDate.Before(effectiveEndDate) {
-		//fmt.Println("s:", effectiveStartDate)
-
 		isOverLap := isStartTimeOverlap(s[int64(intTrainerId)], effectiveStartDate.Unix())
 		if isOverLap {
 			log.Println("Overlap:", effectiveStartDate)
@@ -155,7 +165,6 @@ func (s Scheduler) GetAppointments(trainerId, stringStartDate, stringEndDate str
 		}
 		availableAppointments = append(availableAppointments, possibleAppt)
 		effectiveStartDate = effectiveStartDate.Add(time.Minute * 30)
-		//fmt.Println("after adding: ", effectiveStartDate)
 		effectiveStartDate = calculateEffectiveStartDate(effectiveStartDate)
 
 	}
