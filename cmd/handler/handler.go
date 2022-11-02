@@ -27,9 +27,6 @@ func New() *handler {
 }
 
 func (h *handler) postAppointment(res http.ResponseWriter, req *http.Request) {
-	// TODO: Validate the post body.
-	// Validate the required fields. Check endTime - startTime = 30mins
-	// Validate that both start and end times are always only 00 and 30 mins
 	var appt scheduler.Appointment
 	err := json.NewDecoder(req.Body).Decode(&appt)
 	if err != nil {

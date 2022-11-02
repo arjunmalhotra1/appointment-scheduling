@@ -137,14 +137,15 @@ func (s Scheduler) GetAppointments(trainerId, stringStartDate, stringEndDate str
 	intTrainerId, _ := strconv.Atoi(trainerId)
 	effectiveStartDate := calculateEffectiveStartDate(startDate)
 	effectiveEndDate := calculateEffectiveEndDate(endDate)
-
+	fmt.Println("e:", effectiveEndDate)
 	for effectiveStartDate.Before(effectiveEndDate) {
-		fmt.Println("s:", effectiveStartDate)
-		fmt.Println("e:", effectiveEndDate)
+		//fmt.Println("s:", effectiveStartDate)
+
 		isOverLap := isStartTimeOverlap(s[int64(intTrainerId)], effectiveStartDate.Unix())
 		if isOverLap {
 			log.Println("Overlap:", effectiveStartDate)
 			effectiveStartDate = effectiveStartDate.Add(time.Minute * 30)
+			effectiveStartDate = calculateEffectiveStartDate(effectiveStartDate)
 			continue
 		}
 		possibleAppt := Appointment{
@@ -154,7 +155,7 @@ func (s Scheduler) GetAppointments(trainerId, stringStartDate, stringEndDate str
 		}
 		availableAppointments = append(availableAppointments, possibleAppt)
 		effectiveStartDate = effectiveStartDate.Add(time.Minute * 30)
-		fmt.Println("after adding: ", effectiveStartDate)
+		//fmt.Println("after adding: ", effectiveStartDate)
 		effectiveStartDate = calculateEffectiveStartDate(effectiveStartDate)
 
 	}
@@ -162,7 +163,7 @@ func (s Scheduler) GetAppointments(trainerId, stringStartDate, stringEndDate str
 }
 
 func calculateEffectiveStartDate(startDate time.Time) time.Time {
-	if startDate.Hour() > 17 {
+	if startDate.Hour() >= 17 {
 		return time.Date(startDate.Year(), startDate.Month(), startDate.Day()+1, 8, 00, 00, 0, startDate.Location())
 	} else if startDate.Hour() < 8 {
 		return time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 8, 00, 00, 0, startDate.Location())
@@ -185,5 +186,5 @@ func calculateEffectiveEndDate(endDate time.Time) time.Time {
 	if endDate.Minute() < 30 {
 		return time.Date(endDate.Year(), endDate.Month(), endDate.Day(), endDate.Hour(), 00, 00, 0, endDate.Location())
 	}
-	return time.Date(endDate.Year(), endDate.Month(), endDate.Day(), endDate.Hour()+1, 00, 00, 0, endDate.Location())
+	return time.Date(endDate.Year(), endDate.Month(), endDate.Day(), endDate.Hour(), 30, 00, 0, endDate.Location())
 }
