@@ -126,3 +126,64 @@ func (s Scheduler) GetAppointmentsByTrainer(trainerId string) ([]Appointment, er
 	}
 	return s[intTrainerID], nil
 }
+
+func (s Scheduler) GetAppointments(trainerId, stringStartDate, stringEndDate string) ([]Appointment, error) {
+	var availableAppointments []Appointment
+	startDate, _ := time.Parse(timeLayout, stringStartDate)
+	endDate, _ := time.Parse(timeLayout, stringEndDate)
+	if endDate.Before(startDate) {
+		return []Appointment{}, fmt.Errorf("start date needs to be before the end date")
+	}
+	intTrainerId, _ := strconv.Atoi(trainerId)
+	effectiveStartDate := calculateEffectiveStartDate(startDate)
+	effectiveEndDate := calculateEffectiveEndDate(endDate)
+
+	for effectiveStartDate.Before(effectiveEndDate) {
+		fmt.Println("s:", effectiveStartDate)
+		fmt.Println("e:", effectiveEndDate)
+		isOverLap := isStartTimeOverlap(s[int64(intTrainerId)], effectiveStartDate.Unix())
+		if isOverLap {
+			log.Println("Overlap:", effectiveStartDate)
+			effectiveStartDate = effectiveStartDate.Add(time.Minute * 30)
+			continue
+		}
+		possibleAppt := Appointment{
+			StringAppointmentStartDate: effectiveStartDate.String(),
+			StringAppointmentEndDate:   effectiveStartDate.Add(time.Minute * 30).String(),
+			TrainerId:                  int64(intTrainerId),
+		}
+		availableAppointments = append(availableAppointments, possibleAppt)
+		effectiveStartDate = effectiveStartDate.Add(time.Minute * 30)
+		fmt.Println("after adding: ", effectiveStartDate)
+		effectiveStartDate = calculateEffectiveStartDate(effectiveStartDate)
+
+	}
+	return availableAppointments, nil
+}
+
+func calculateEffectiveStartDate(startDate time.Time) time.Time {
+	if startDate.Hour() > 17 {
+		return time.Date(startDate.Year(), startDate.Month(), startDate.Day()+1, 8, 00, 00, 0, startDate.Location())
+	} else if startDate.Hour() < 8 {
+		return time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 8, 00, 00, 0, startDate.Location())
+	}
+	if startDate.Minute() < 30 && startDate.Minute() > 0 {
+		return time.Date(startDate.Year(), startDate.Month(), startDate.Day(), startDate.Hour(), 30, 00, 0, startDate.Location())
+	} else if startDate.Minute() > 30 {
+		return time.Date(startDate.Year(), startDate.Month(), startDate.Day(), startDate.Hour()+1, 00, 00, 0, startDate.Location())
+	}
+	return startDate
+
+}
+
+func calculateEffectiveEndDate(endDate time.Time) time.Time {
+	if endDate.Hour() >= 17 {
+		return time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 17, 00, 00, 0, endDate.Location())
+	} else if endDate.Hour() < 8 {
+		return time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 8, 00, 00, 0, endDate.Location())
+	}
+	if endDate.Minute() < 30 {
+		return time.Date(endDate.Year(), endDate.Month(), endDate.Day(), endDate.Hour(), 00, 00, 0, endDate.Location())
+	}
+	return time.Date(endDate.Year(), endDate.Month(), endDate.Day(), endDate.Hour()+1, 00, 00, 0, endDate.Location())
+}
